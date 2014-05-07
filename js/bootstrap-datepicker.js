@@ -1251,7 +1251,8 @@
 
 		$(this.inputs)
 			.datepicker(options)
-			.bind('changeDate', $.proxy(this.dateUpdated, this));
+			.bind('changeDate', $.proxy(this.dateRangeUpdated, this));
+		$(this.inputs).bind('change', $.proxy(this.dateUpdated, this));
 
 		this.pickers = $.map(this.inputs, function(i){
 			return $(i).data('datepicker');
@@ -1263,15 +1264,38 @@
 			this.dates = $.map(this.pickers, function(i){
 				return i.getUTCDate();
 			});
-			this.updateRanges();
+			this.updateRanges(this.dates);
 		},
-		updateRanges: function(){
-			var range = $.map(this.dates, function(d){
+		updateRanges: function(dates){
+			var range = $.map(dates, function(d){
 				return d.valueOf();
 			});
 			$.each(this.pickers, function(i, p){
 				p.setRange(range);
 			});
+		},
+		dateRangeUpdated: function(e){
+			var dp = $(e.target).data('datepicker'),
+				new_date = dp.getUTCDate(),
+				i = $.inArray(e.target, this.inputs),
+				l = this.inputs.length,
+				dates = this.dates.slice(0);
+			if (i === -1)
+				return;
+
+			$.each(this.pickers, function(i, p){
+				if (!p.getUTCDate())
+					p.setUTCDate(new_date);
+			});
+
+			if (new_date < dates[i]){
+				dates[i--] = new_date;
+			}
+			else if (new_date > dates[i]){
+				dates[i++] = new_date;
+			}
+
+			this.updateRanges(dates);
 		},
 		dateUpdated: function(e){
 			// `this.updating` is a workaround for preventing infinite recursion
